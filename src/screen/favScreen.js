@@ -1,112 +1,121 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {
   SafeAreaView,
-  ScrollView,
-  StatusBar,
+  FlatList,
   StyleSheet,
-  Text,
-  useColorScheme,
   View,
+  Text,
+  Image,
+  Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
-const Section = ({children, title}) => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
+import {useSelector, useDispatch} from 'react-redux';
+import {removeFavourite} from 'actions/favAction';
+
+import TextDescription from 'components/textDescription';
+
+const windowWidth = Dimensions.get('window').width;
 
 const FavScreen = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+  const {data} = useSelector(state => state.favReducer);
+  const dispatch = useDispatch();
+  const removeFav = item => dispatch(removeFavourite(item));
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const [heightImageInScreen, setHeightImageInScreen] = useState(300);
+
+  const removeFavItem = itemFav => {
+    removeFav(itemFav);
+  };
+
+  const renderItem = ({item}) => {
+    return (
+      <View>
+        <View
+          style={[
+            styles.imageContainer,
+            !item.image_id ? styles.nullImageContainer : null,
+          ]}>
+          {item.image_id ? (
+            <Image
+              style={[styles.imageGalleryStyle, {height: heightImageInScreen}]}
+              source={{
+                uri: `https://www.artic.edu/iiif/2/${item.image_id}/full/843,/0/default.jpg`,
+              }}
+            />
+          ) : (
+            <Text style={styles.textGalleryStyle}>No Image found.</Text>
+          )}
+        </View>
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={styles.heartContainer}
+            onPress={() => removeFavItem(item)}>
+            <Icon
+              style={styles.iconStyle}
+              name="heart"
+              size={30}
+              color="#900"
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.descriptionContainer}>
+          <TextDescription title={'Title'} description={item.title} />
+          <TextDescription
+            title={'Inscription'}
+            description={item.inscriptions}
+          />
+        </View>
+      </View>
+    );
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+    <SafeAreaView style={styles.containerStyle}>
+      <FlatList
+        data={data}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  containerStyle: {
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  imageContainer: {
+    width: windowWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  nullImageContainer: {
+    height: 300,
   },
-  highlight: {
-    fontWeight: '700',
+  imageGalleryStyle: {
+    width: windowWidth,
+    resizeMode: 'cover',
   },
+  textGalleryStyle: {
+    textAlign: 'center',
+  },
+  descriptionContainer: {
+    padding: 10,
+  },
+  actionContainer: {},
+  heartContainer: {
+    width: 50,
+    height: 50,
+    padding: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconStyle: {},
 });
 
 export default FavScreen;
