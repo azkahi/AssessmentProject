@@ -1,21 +1,13 @@
 import {applyMiddleware, createStore} from 'redux';
 import {persistStore, persistReducer} from 'redux-persist';
 import logger from 'redux-logger';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import thunk from 'redux-thunk';
 import {MODE} from '@env';
-import reducers from '../reducers';
+import reducers from 'reducers';
 
-const persistConfig = {
-  timeout: 0,
-  key: 'assessment-azka',
-  storage: AsyncStorage,
-};
+const middleware = MODE === 'DEVELOPMENT' ? [thunk, logger] : [thunk];
 
-const reducer = persistReducer(persistConfig, reducers);
-
-const middleware = MODE === 'DEVELOPMENT' ? [logger] : [];
-
-let store = createStore(reducer, applyMiddleware(...middleware));
+let store = createStore(reducers, applyMiddleware(...middleware));
 
 let persistor = persistStore(store);
 

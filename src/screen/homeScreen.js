@@ -6,106 +6,144 @@
  * @flow strict-local
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 
 import {
   SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
+  FlatList,
   Text,
-  useColorScheme,
   View,
+  TextInput,
+  Image,
+  Dimensions,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {useSelector, useDispatch} from 'react-redux';
 
-const Section = ({children, title}) => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
+import {fetchHome, search, homeClear} from 'actions/homeAction';
+
+const windowWidth = Dimensions.get('window').width;
+const windowHeight = Dimensions.get('window').height;
 
 const HomeScreen = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+  const {data, isLoading} = useSelector(state => state.homeReducer);
+  const dispatch = useDispatch();
+  const fetchHomeData = (pageNumber, limit) =>
+    dispatch(fetchHome(pageNumber, limit));
+  const searchData = (query, pageNumber, limit) =>
+    dispatch(search(query, pageNumber, limit));
+  const clearData = () => dispatch(homeClear());
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const [pageNumber, setPageNumber] = useState(1);
+  const [limit, setLimit] = useState(15);
+
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    fetchHomeData(pageNumber, limit);
+  }, []);
+
+  const renderItem = ({item}) => {
+    if (item.image_id) {
+      return (
+        <TouchableOpacity style={styles.itemStyle}>
+          <Image
+            style={styles.imageGalleryStyle}
+            source={{
+              uri: `https://www.artic.edu/iiif/2/${item.image_id}/full/843,/0/default.jpg`,
+            }}
+          />
+        </TouchableOpacity>
+      );
+    } else {
+      return (
+        <TouchableOpacity style={styles.itemStyleNull}>
+          <Text style={styles.textGalleryStyle}>No Image found.</Text>
+        </TouchableOpacity>
+      );
+    }
+  };
+
+  const onEndReached = () => {
+    // Sometimes pageNumber is not updated, so force the process then update page number
+    if (!isLoading) {
+      if (query) {
+        searchData(query, pageNumber + 1, limit);
+      } else {
+        fetchHomeData(pageNumber + 1, limit);
+      }
+
+      setPageNumber(pageNumber + 1);
+    }
+  };
+
+  const onChangeText = text => {
+    clearData();
+    setPageNumber(1);
+    setQuery(text);
+
+    if (text) {
+      searchData(text, 1, limit);
+    } else {
+      fetchHomeData(1, limit);
+    }
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+    <SafeAreaView style={styles.containerStyle}>
+      {isLoading ? <ActivityIndicator /> : null}
+      <TextInput
+        style={styles.textInput}
+        onChangeText={text => onChangeText(text)}
+        value={query}
+        placeholder="Search..."
+      />
+      <FlatList
+        numColumns={3}
+        data={data.data}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  containerStyle: {
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  itemStyle: {
+    width: windowWidth / 3,
+    height: windowHeight / 5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  itemStyleNull: {
+    width: windowWidth / 3,
+    height: windowHeight / 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  highlight: {
-    fontWeight: '700',
+  imageGalleryStyle: {
+    width: windowWidth / 3,
+    height: windowHeight / 5,
+    resizeMode: 'cover',
+  },
+  textGalleryStyle: {
+    textAlign: 'center',
+  },
+  textInput: {
+    height: 40,
+    margin: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 15,
+    padding: 10,
   },
 });
 
