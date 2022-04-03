@@ -28,7 +28,7 @@ import {fetchHome, search, homeClear} from 'actions/homeAction';
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
-const HomeScreen = () => {
+const HomeScreen = ({navigation}) => {
   const {data, isLoading} = useSelector(state => state.homeReducer);
   const dispatch = useDispatch();
   const fetchHomeData = (pageNumber, limit) =>
@@ -39,17 +39,39 @@ const HomeScreen = () => {
 
   const [pageNumber, setPageNumber] = useState(1);
   const [limit, setLimit] = useState(15);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    fetchHomeData(pageNumber, limit);
+    clearData();
+    fetchHomeData(1, limit);
   }, []);
+
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    clearData();
+
+    if (query !== '') {
+      searchData(query, 1, limit);
+    } else {
+      fetchHomeData(1, limit);
+    }
+
+    setPageNumber(1);
+    setIsRefreshing(false);
+  };
 
   const renderItem = ({item}) => {
     if (item.image_id) {
       return (
-        <TouchableOpacity style={styles.itemStyle}>
+        <TouchableOpacity
+          style={styles.itemStyle}
+          onPress={() =>
+            navigation.navigate('Detail', {
+              item,
+            })
+          }>
           <Image
             style={styles.imageGalleryStyle}
             source={{
@@ -60,7 +82,13 @@ const HomeScreen = () => {
       );
     } else {
       return (
-        <TouchableOpacity style={styles.itemStyleNull}>
+        <TouchableOpacity
+          style={styles.itemStyleNull}
+          onPress={() =>
+            navigation.navigate('Detail', {
+              item,
+            })
+          }>
           <Text style={styles.textGalleryStyle}>No Image found.</Text>
         </TouchableOpacity>
       );
@@ -85,7 +113,7 @@ const HomeScreen = () => {
     setPageNumber(1);
     setQuery(text);
 
-    if (text) {
+    if (text !== '') {
       searchData(text, 1, limit);
     } else {
       fetchHomeData(1, limit);
@@ -94,18 +122,24 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.containerStyle}>
-      {isLoading ? <ActivityIndicator /> : null}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator />
+        </View>
+      ) : null}
       <TextInput
         style={styles.textInput}
-        onChangeText={text => onChangeText(text)}
         value={query}
         placeholder="Search..."
+        onChangeText={text => onChangeText(text)}
       />
       <FlatList
         numColumns={3}
         data={data.data}
         renderItem={renderItem}
         keyExtractor={item => item.id}
+        onRefresh={() => onRefresh()}
+        refreshing={isRefreshing}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
       />
@@ -143,6 +177,9 @@ const styles = StyleSheet.create({
     margin: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 15,
+    padding: 10,
+  },
+  loadingContainer: {
     padding: 10,
   },
 });
