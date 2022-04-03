@@ -99,6 +99,6 @@ export const search = (query, pageNumber, limit) => {
 export const homeClear = () => dispatch => {
   dispatch({
     type: HOME_CLEAR,
-    isLoading: false,
+    isLoading: true,
   });
 };
