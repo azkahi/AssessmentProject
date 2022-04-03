@@ -61,6 +61,7 @@ export const homeReducer = (state = initialHomeState, action) => {
       return {
         ...state,
         ...initialHomeState,
+        isLoading: action.isLoading,
       };
     default:
       return state;
